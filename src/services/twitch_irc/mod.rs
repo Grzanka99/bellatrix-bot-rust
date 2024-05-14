@@ -8,10 +8,12 @@ use std::{
 
 use websocket::{sync::Client, ClientBuilder, Message, OwnedMessage};
 
-use crate::utils::logger;
+use crate::{services::twitch_irc::parse_command::ECommand, utils::logger};
 
 use self::parser::parse_message;
 
+mod parse_command;
+mod parse_source;
 mod parse_tags;
 mod parser;
 
@@ -96,17 +98,28 @@ impl TwitchIrc {
                 };
                 match message {
                     OwnedMessage::Close(_) => {
+                        logger::warning(String::from("Closing twitch irc connection"));
                         let _ = tx_1.send(OwnedMessage::Close(None));
                     }
                     OwnedMessage::Ping(data) => match tx_1.send(OwnedMessage::Pong(data)) {
-                        Ok(()) => (),
+                        Ok(_) => {
+                            logger::info(String::from("[PING] sending ping"));
+                        }
                         Err(err) => {
-                            logger::error(format!("Receive loop: {:?}", err));
+                            logger::error(format!("[PONG] {:?}", err));
                         }
                     },
                     OwnedMessage::Text(msg) => {
-                        // println!("Receive loop: {}", msg);
-                        parse_message(msg);
+                        match parse_message(msg) {
+                            Some(v) => {
+                                if v.command == ECommand::PING {
+                                    tx_1.send(OwnedMessage::Ping(msg));
+                                };
+                                println!("===================");
+                                println!("{:?}", v);
+                            }
+                            None => (),
+                        };
                     }
                     _ => (),
                 }
@@ -227,11 +240,8 @@ pub fn asd() {
     let mut client = TwitchIrc::new();
 
     match env::var("PASSWORD") {
-        Err(_) => {
-            print!("err");
-        }
+        Err(_) => (),
         Ok(password) => {
-            println!("asdasd");
             client.start_loop(create_webstocket_client());
             client.connect("BellaBotrix", password);
 

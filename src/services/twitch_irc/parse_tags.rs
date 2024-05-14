@@ -16,50 +16,52 @@ pub struct TTags {
     pub badges: HashMap<String, bool>,
 }
 
-pub fn parse_tags(data: String) -> TTags {
-    let splited = data.split(";");
+impl TTags {
+    pub fn parse_into(data: String) -> Self {
+        let splited = data.split(";");
 
-    let mut tags = TTags {
-        client_nonce: String::from(""),
-        color: String::from(""),
-        display_name: String::from(""),
-        emotes: String::from(""),
-        first_message: false,
-        is_mod: false,
-        room_id: 0,
-        is_subscriber: false,
-        user_id: String::from(""),
-        user_type: String::from(""),
-        badges: HashMap::new(),
-        username: String::from(""),
-    };
-
-    splited.for_each(|element| {
-        let (tag, value) = match element.split_once("=") {
-            Some(v) => v,
-            None => unreachable!(),
+        let mut tags = TTags {
+            client_nonce: String::from(""),
+            color: String::from(""),
+            display_name: String::from(""),
+            emotes: String::from(""),
+            first_message: false,
+            is_mod: false,
+            room_id: 0,
+            is_subscriber: false,
+            user_id: String::from(""),
+            user_type: String::from(""),
+            badges: HashMap::new(),
+            username: String::from(""),
         };
 
-        match tag {
-            "badges" => tags.badges = parse_badges(value),
-            "emotes" => tags.emotes = String::from(value),
-            "client-none" => tags.client_nonce = String::from(value),
-            "color" => tags.color = String::from(value),
-            "display-name" => {
-                tags.display_name = String::from(value);
-                tags.username = value.to_lowercase()
-            }
-            "first-msg" => tags.first_message = value == "1",
-            "mod" => tags.is_mod = value == "1",
-            "room-id" => tags.room_id = value.parse::<usize>().unwrap_or(0),
-            "subscriber" => tags.is_subscriber = value == "1",
-            "user-id" => tags.user_id = String::from(value),
-            "user-type" => tags.user_type = String::from(value),
-            _ => (),
-        }
-    });
+        splited.for_each(|element| {
+            let (tag, value) = match element.split_once("=") {
+                Some(v) => v,
+                None => unreachable!(),
+            };
 
-    return tags;
+            match tag {
+                "badges" => tags.badges = parse_badges(value),
+                "emotes" => tags.emotes = String::from(value),
+                "client-none" => tags.client_nonce = String::from(value),
+                "color" => tags.color = String::from(value),
+                "display-name" => {
+                    tags.display_name = String::from(value);
+                    tags.username = value.to_lowercase()
+                }
+                "first-msg" => tags.first_message = value == "1",
+                "mod" => tags.is_mod = value == "1",
+                "room-id" => tags.room_id = value.parse::<usize>().unwrap_or(0),
+                "subscriber" => tags.is_subscriber = value == "1",
+                "user-id" => tags.user_id = String::from(value),
+                "user-type" => tags.user_type = String::from(value),
+                _ => (),
+            }
+        });
+
+        return tags;
+    }
 }
 
 fn parse_badges(data: &str) -> HashMap<String, bool> {
