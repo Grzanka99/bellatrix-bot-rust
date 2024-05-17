@@ -10,16 +10,12 @@ use websocket::{sync::Client, ClientBuilder, Message, OwnedMessage};
 
 use crate::{services::twitch_irc::parse_command::ECommand, utils::logger};
 
-use self::parser::parse_message;
+use self::parser::TwitchIrcContext;
 
 mod parse_command;
 mod parse_source;
 mod parse_tags;
 mod parser;
-
-struct TwitchIrcContext {
-    channel: String,
-}
 
 type EventHandler = fn(ctx: &mut TwitchIrcContext);
 
@@ -101,20 +97,14 @@ impl TwitchIrc {
                         logger::warning(String::from("Closing twitch irc connection"));
                         let _ = tx_1.send(OwnedMessage::Close(None));
                     }
-                    OwnedMessage::Ping(data) => match tx_1.send(OwnedMessage::Pong(data)) {
-                        Ok(_) => {
-                            logger::info(String::from("[PING] sending ping"));
-                        }
-                        Err(err) => {
-                            logger::error(format!("[PONG] {:?}", err));
-                        }
-                    },
                     OwnedMessage::Text(msg) => {
-                        match parse_message(msg) {
+                        match TwitchIrcContext::parse_into(msg.clone()) {
+                            Some(v) if v.command_type == ECommand::PING => {
+                                logger::info(String::from("[PING] sending ping"));
+                                let _ = tx_1.send(OwnedMessage::Text(format!("PING: {}", msg)));
+                            }
+                            Some(v) if v.command_type == ECommand::UNKNOWN => (),
                             Some(v) => {
-                                if v.command == ECommand::PING {
-                                    tx_1.send(OwnedMessage::Ping(msg));
-                                };
                                 println!("===================");
                                 println!("{:?}", v);
                             }
@@ -245,7 +235,7 @@ pub fn asd() {
             client.start_loop(create_webstocket_client());
             client.connect("BellaBotrix", password);
 
-            client.register_handler("#wannacry_tm", |ctx| {
+            client.register_handler("#kamet0", |ctx| {
                 // (ctx.send)("siema".to_string());
                 println!("AAAAAJ EM DE HAAANDLER");
             });

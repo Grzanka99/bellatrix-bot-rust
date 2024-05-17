@@ -38,7 +38,7 @@ impl TTags {
         splited.for_each(|element| {
             let (tag, value) = match element.split_once("=") {
                 Some(v) => v,
-                None => unreachable!(),
+                None => ("", ""),
             };
 
             match tag {
@@ -71,7 +71,7 @@ fn parse_badges(data: &str) -> HashMap<String, bool> {
     badges.for_each(|e| {
         let (badge, status) = match e.split_once('/') {
             Some(v) => v,
-            None => unreachable!(),
+            None => ("", ""),
         };
         decoded.insert(String::from(badge), status == "1");
     });
